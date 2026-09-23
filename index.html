@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Quiz Scoreboard</title>
-<meta name="description" content="Keep score for quiz shows: players, points per question, undo, and a green-screen stream view.">
+<meta name="description" content="Keep your score while playing a quiz: pick the number of questions, tap Right or Wrong, see your percentage.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
@@ -17,9 +17,11 @@
     --line: #d6d9ea;
     --accent: #2f4bff;
     --accent-ink: #ffffff;
-    --gold: #f2b705;
-    --danger: #d63447;
-    --green: #00b140;
+    --right: #00995c;
+    --right-soft: #d9f5e8;
+    --wrong: #d63447;
+    --wrong-soft: #fbe1e4;
+    --track: #e2e5f1;
     --shadow: 0 1px 0 rgba(27,29,58,.06), 0 6px 18px rgba(27,29,58,.07);
     --display: "Bungee", "Arial Black", Impact, sans-serif;
     --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -29,6 +31,7 @@
     :root:not([data-theme="light"]) {
       --bg: #10122a; --surface: #1a1d3d; --ink: #eef0ff; --muted: #a3a7cf;
       --line: #2e3262; --accent: #6f84ff; --accent-ink: #0d0f24;
+      --right: #2fd18a; --right-soft: #133a33; --wrong: #ff6b7d; --wrong-soft: #3d1a2a; --track: #262a55;
       --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.35);
       color-scheme: dark;
     }
@@ -36,6 +39,7 @@
   :root[data-theme="dark"] {
     --bg: #10122a; --surface: #1a1d3d; --ink: #eef0ff; --muted: #a3a7cf;
     --line: #2e3262; --accent: #6f84ff; --accent-ink: #0d0f24;
+    --right: #2fd18a; --right-soft: #133a33; --wrong: #ff6b7d; --wrong-soft: #3d1a2a; --track: #262a55;
     --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.35);
     color-scheme: dark;
   }
@@ -49,382 +53,315 @@
     min-height: 100vh;
   }
   [hidden] { display: none !important; }
-  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+  .wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 20px; }
 
-  header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; justify-content: space-between; }
-  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .brand h1 { font: 400 clamp(22px, 4vw, 32px)/1 var(--display); margin: 0; letter-spacing: .01em; }
-  .game-name {
-    font: 500 16px var(--body); color: var(--muted); background: transparent; border: 0;
-    border-bottom: 1px dashed var(--line); padding: 2px 0; min-width: 0; width: 16ch;
-  }
-  .game-name:focus { outline: none; border-bottom-color: var(--accent); color: var(--ink); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { font: 400 clamp(22px, 5vw, 30px)/1 var(--display); margin: 0; }
+  h2 { font: 700 20px/1.2 var(--body); margin: 0; text-wrap: balance; }
+  .label { font: 700 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
   button {
-    font: 500 14px var(--body); color: var(--ink); background: var(--surface);
-    border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; cursor: pointer;
-    transition: transform .08s ease, background .15s ease, border-color .15s ease;
+    font: 700 16px var(--body); color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; cursor: pointer;
+    transition: transform .08s ease, border-color .15s ease, background .15s ease;
   }
   button:hover { border-color: var(--accent); }
   button:active { transform: translateY(1px); }
-  button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  button.danger { color: var(--danger); }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   button:disabled { opacity: .45; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.ghost { background: transparent; border-color: transparent; color: var(--muted); font-weight: 500; font-size: 14px; padding: 6px 8px; }
+  button.ghost:hover { color: var(--ink); border-color: var(--line); }
 
-  /* question strip */
-  .strip {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px;
-    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px;
-    box-shadow: var(--shadow);
-  }
-  .qcount { display: flex; align-items: center; gap: 10px; }
-  .qcount .label { font: 700 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-  .qcount .num { font: 400 28px/1 var(--display); font-variant-numeric: tabular-nums; min-width: 2ch; text-align: center; }
-  .points { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .points .label { font: 700 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-  .chip { padding: 6px 12px; border-radius: 999px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-  .strip .spacer { flex: 1; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; box-shadow: var(--shadow); display: grid; gap: 16px; }
 
-  /* players */
-  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .card {
-    position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
-    padding: 16px; display: grid; gap: 12px; box-shadow: var(--shadow); overflow: hidden;
-  }
-  .card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--pc); }
-  .card.leader { border-color: var(--gold); }
-  .card-head { display: flex; align-items: center; gap: 8px; }
-  .rank {
-    font: 400 13px/1 var(--display); color: var(--muted); min-width: 2.2em;
-  }
-  .card.leader .rank { color: var(--gold); }
-  .pname {
-    flex: 1; min-width: 0; font: 700 18px var(--body); color: var(--ink); background: transparent;
-    border: 0; border-bottom: 1px dashed transparent; padding: 2px 0;
-  }
-  .pname:hover { border-bottom-color: var(--line); }
-  .pname:focus { outline: none; border-bottom-color: var(--accent); }
-  .key { font: 700 11px var(--body); color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
-  .icon-btn { border: 0; background: transparent; padding: 4px 6px; color: var(--muted); font-size: 18px; line-height: 1; }
-  .icon-btn:hover { color: var(--danger); }
-  .score {
-    font: 400 clamp(56px, 9vw, 84px)/1 var(--display); text-align: center; color: var(--pc);
-    font-variant-numeric: tabular-nums; padding: 6px 0 2px;
-  }
-  .score.bump { animation: bump .28s ease; }
-  @keyframes bump { 40% { transform: scale(1.12); } }
-  .controls { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; }
-  .controls button { padding: 12px 8px; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
-  .controls .plus { background: var(--pc); color: #fff; border-color: var(--pc); }
-  .custom { display: flex; gap: 6px; }
+  /* setup */
+  .sizes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .size { font: 400 26px/1 var(--display); padding: 20px 0; font-variant-numeric: tabular-nums; }
+  .size[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .custom { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .custom label { color: var(--muted); font-weight: 500; }
   .custom input {
-    flex: 1; min-width: 0; font: 500 14px var(--body); color: var(--ink); background: var(--bg);
-    border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px;
+    width: 7em; font: 700 18px var(--body); color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; font-variant-numeric: tabular-nums;
   }
+  .error { color: var(--wrong); font-size: 14px; margin: 0; }
+  .start { padding: 16px; font-size: 18px; }
 
-  .add-card {
-    border: 2px dashed var(--line); border-radius: 18px; display: grid; place-items: center; min-height: 220px;
-    background: transparent; color: var(--muted); font: 700 16px var(--body);
-  }
-  .add-card:hover { color: var(--accent); border-color: var(--accent); }
+  /* quiz */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+  .stat { display: grid; gap: 4px; }
+  .stat .v { font: 400 clamp(30px, 8vw, 44px)/1 var(--display); font-variant-numeric: tabular-nums; }
+  .stat .v small { font: 700 16px var(--body); color: var(--muted); }
+  .stat.pct .v { color: var(--accent); }
+  .bar { height: 12px; border-radius: 999px; background: var(--track); overflow: hidden; display: flex; }
+  .bar span { display: block; height: 100%; transition: width .2s ease; }
+  .bar .r { background: var(--right); }
+  .bar .w { background: var(--wrong); }
+  .qline { display: flex; justify-content: space-between; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .answer { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .answer button { padding: 28px 0; font: 400 clamp(22px, 6vw, 30px)/1 var(--display); border-width: 2px; }
+  .answer .right { background: var(--right-soft); color: var(--right); border-color: var(--right); }
+  .answer .wrong { background: var(--wrong-soft); color: var(--wrong); border-color: var(--wrong); }
+  .answer .right:hover { background: var(--right); color: #fff; }
+  .answer .wrong:hover { background: var(--wrong); color: #fff; }
+  .answer kbd { display: block; margin-top: 8px; font: 500 12px var(--body); opacity: .75; }
+  .quiz-actions { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .flash { animation: flash .3s ease; }
+  @keyframes flash { 40% { transform: scale(1.1); } }
+
+  /* result */
+  .result { text-align: center; }
+  .big { font: 400 clamp(64px, 20vw, 110px)/1 var(--display); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .verdict { font: 700 20px var(--body); }
+  .sub { color: var(--muted); font-variant-numeric: tabular-nums; }
 
   /* history */
-  .lower { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  details.history { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
-  details.history summary { cursor: pointer; font-weight: 700; }
-  .log { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow: auto; font-variant-numeric: tabular-nums; }
-  .log li { display: flex; gap: 10px; color: var(--muted); font-size: 14px; }
-  .log .q { min-width: 3.5em; font-weight: 700; }
-  .log .d { font-weight: 700; }
-  .log .d.pos { color: var(--green); }
-  .log .d.neg { color: var(--danger); }
-  .help { color: var(--muted); font-size: 13px; }
-  kbd { font: 700 12px var(--body); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; background: var(--surface); }
+  .hist-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font: 700 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 8px 8px 0; }
+  td { padding: 8px 8px 8px 0; border-top: 1px solid var(--line); }
+  td.num, th.num { text-align: right; padding-right: 0; }
+  .pill { display: inline-block; min-width: 3.6em; text-align: center; border-radius: 999px; padding: 2px 8px; font-weight: 700; font-size: 14px; }
+  .pill.hi { background: var(--right-soft); color: var(--right); }
+  .pill.lo { background: var(--wrong-soft); color: var(--wrong); }
+  .pill.mid { background: var(--track); color: var(--ink); }
+  .empty { color: var(--muted); margin: 0; }
+  .table-scroll { overflow-x: auto; }
 
-  /* confirm bar */
   .confirm {
     position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
-    background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 14px; display: flex; gap: 12px;
-    align-items: center; flex-wrap: wrap; box-shadow: 0 10px 30px rgba(0,0,0,.25); max-width: calc(100vw - 32px); z-index: 10;
+    background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 14px; display: flex; gap: 10px;
+    align-items: center; flex-wrap: wrap; box-shadow: 0 10px 30px rgba(0,0,0,.25); width: max-content; max-width: calc(100vw - 32px); z-index: 10;
   }
-  .confirm button { background: transparent; color: var(--bg); border-color: rgba(255,255,255,.3); }
-  .confirm button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .confirm button { background: transparent; color: var(--bg); border-color: rgba(255,255,255,.35); font-size: 14px; padding: 8px 12px; }
+  .confirm button.yes { background: var(--wrong); color: #fff; border-color: var(--wrong); }
 
-  /* stream view: big scoreboard on chroma green for window capture */
-  body.stream { background: var(--green); padding: 24px; }
-  body.stream .edit-only { display: none !important; }
-  body.stream .board { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-  body.stream .card { box-shadow: 0 8px 0 rgba(0,0,0,.25); border: 0; background: #1b1d3a; }
-  body.stream .card .pname { color: #fff; text-align: center; font-size: 22px; pointer-events: none; }
-  body.stream .card .rank { color: #a3a7cf; }
-  body.stream .card.leader .rank { color: var(--gold); }
-  body.stream .score { font-size: clamp(64px, 11vw, 120px); }
-  body.stream .qbanner {
-    display: inline-block; justify-self: center; background: #1b1d3a; color: #fff; border-radius: 12px;
-    padding: 8px 18px; font: 400 26px/1 var(--display);
-  }
-  .qbanner { display: none; }
-  .stream-exit { position: fixed; top: 12px; right: 12px; opacity: .15; }
-  .stream-exit:hover, .stream-exit:focus { opacity: 1; }
-
-  @media (max-width: 520px) {
-    .strip .spacer { display: none; }
-    .game-name { width: 100%; }
+  @media (max-width: 420px) {
+    .sizes { grid-template-columns: repeat(2, 1fr); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .score.bump { animation: none; }
-    button { transition: none; }
+    * { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top edit-only">
-    <div class="brand">
-      <h1>Quiz Scoreboard</h1>
-      <input id="gameName" class="game-name" aria-label="Quiz name" placeholder="Name this quiz">
-    </div>
-    <div class="toolbar">
-      <button id="undoBtn" title="Undo (U)">Undo</button>
-      <button id="streamBtn" title="Green-screen view for OBS window capture (S)">Stream view</button>
-      <button id="themeBtn" title="Switch light or dark">Theme</button>
-      <button id="resetBtn" class="danger">Reset scores</button>
-      <button id="newBtn" class="danger">New quiz</button>
-    </div>
+  <header>
+    <h1>Quiz Scoreboard</h1>
+    <button id="themeBtn" class="ghost" title="Switch light or dark">Theme</button>
   </header>
 
-  <div class="qbanner" id="qBanner">Q1</div>
-
-  <section class="strip edit-only" aria-label="Question and points">
-    <div class="qcount">
-      <span class="label">Question</span>
-      <button id="qPrev" aria-label="Previous question">−</button>
-      <span class="num" id="qNum">1</span>
-      <button id="qNext" class="primary" aria-label="Next question" title="Next question (N)">Next</button>
+  <!-- setup -->
+  <section class="panel" id="setup">
+    <h2>How many questions?</h2>
+    <div class="sizes" id="sizes" role="group" aria-label="Number of questions">
+      <button class="size" data-n="25">25</button>
+      <button class="size" data-n="50">50</button>
+      <button class="size" data-n="75">75</button>
+      <button class="size" data-n="100">100</button>
     </div>
-    <div class="points" role="group" aria-label="Points per correct answer">
-      <span class="label">Points</span>
-      <div id="chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <div class="custom">
+      <label for="customN">Or type a number</label>
+      <input id="customN" type="number" inputmode="numeric" min="1" max="1000" step="1" placeholder="e.g. 40">
     </div>
-    <div class="spacer"></div>
-    <span class="help">Keys <kbd>1</kbd>–<kbd>9</kbd> award, <kbd>Shift</kbd>+number removes</span>
+    <p class="error" id="setupError" hidden>Enter a number of questions from 1 to 1000.</p>
+    <button class="primary start" id="startBtn">Start quiz</button>
   </section>
 
-  <main class="board" id="board" aria-live="polite"></main>
+  <!-- quiz -->
+  <section class="panel" id="quiz" hidden>
+    <div class="stats">
+      <div class="stat"><span class="label">Question</span><span class="v" id="sAnswered">0<small>/25</small></span></div>
+      <div class="stat"><span class="label">Right</span><span class="v" id="sRight">0</span></div>
+      <div class="stat pct"><span class="label">Score</span><span class="v" id="sPct">0%</span></div>
+    </div>
+    <div class="bar" aria-hidden="true"><span class="r" id="barR"></span><span class="w" id="barW"></span></div>
+    <div class="qline"><span id="qNow">Question 1 of 25</span><span id="qLeft">25 left</span></div>
+    <div class="answer">
+      <button class="right" id="rightBtn">Right<kbd>R or ←</kbd></button>
+      <button class="wrong" id="wrongBtn">Wrong<kbd>W or →</kbd></button>
+    </div>
+    <div class="quiz-actions">
+      <button class="ghost" id="undoBtn" title="Undo the last answer (U)">Undo last answer</button>
+      <button class="ghost" id="quitBtn">End quiz now</button>
+    </div>
+  </section>
 
-  <section class="lower edit-only">
-    <details class="history" id="historyBox">
-      <summary>Score history</summary>
-      <ul class="log" id="log"></ul>
-    </details>
+  <!-- result -->
+  <section class="panel result" id="result" hidden>
+    <span class="label">Final score</span>
+    <div class="big" id="rPct">0%</div>
+    <div class="verdict" id="rVerdict"></div>
+    <div class="sub" id="rSub"></div>
+    <button class="primary start" id="againBtn">Start again</button>
+  </section>
+
+  <!-- history -->
+  <section class="panel" id="history">
+    <div class="hist-head">
+      <h2>Past quizzes</h2>
+      <button class="ghost" id="clearBtn">Clear</button>
+    </div>
+    <div class="table-scroll" id="histTable"></div>
   </section>
 </div>
 
-<button class="stream-exit" id="streamExit" hidden>Exit stream view</button>
 <div class="confirm" id="confirmBar" hidden>
   <span id="confirmText"></span>
-  <button id="confirmYes" class="danger">Yes</button>
+  <button class="yes" id="confirmYes">Yes</button>
   <button id="confirmNo">Cancel</button>
 </div>
 
 <script>
 (function () {
-  const KEY = "quiz-scoreboard-v1";
-  const COLORS = ["#2f4bff", "#e0457b", "#00a37a", "#f28c28", "#8a4dff", "#0096c7", "#c0392b", "#6a994e"];
-  const POINT_OPTIONS = [1, 2, 3, 5, 10];
-
-  const sample = () => ({
-    name: "",
-    question: 1,
-    points: 1,
-    players: [
-      { id: uid(), name: "Player 1", score: 0, color: COLORS[0] },
-      { id: uid(), name: "Player 2", score: 0, color: COLORS[1] },
-      { id: uid(), name: "Player 3", score: 0, color: COLORS[2] }
-    ],
-    history: []
-  });
-
-  function uid() { return Math.random().toString(36).slice(2, 9); }
-  function load() {
-    try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.players)) return s; } catch (e) {}
-    return sample();
-  }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
-
-  let state = load();
-  let stream = false;
+  const KEY = "quiz-scoreboard-v2";
+  const HKEY = "quiz-scoreboard-history";
   const $ = (id) => document.getElementById(id);
 
-  function nextColor() {
-    const used = new Set(state.players.map(p => p.color));
-    return COLORS.find(c => !used.has(c)) || COLORS[state.players.length % COLORS.length];
+  // Saved in this browser only. Nothing is sent anywhere.
+  function read(k, fallback) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch (e) { return fallback; } }
+  function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+  let quiz = read(KEY, null);          // { total, answers: [true,false,...], startedAt }
+  let history = read(HKEY, []);        // [{ at, total, answered, right }]
+  let chosen = 25;
+
+  const pct = (right, n) => n ? Math.round(right / n * 100) : 0;
+  const rightCount = () => quiz.answers.filter(Boolean).length;
+
+  function show(view) {
+    ["setup", "quiz", "result"].forEach(v => $(v).hidden = v !== view);
   }
 
-  function ranks() {
-    const sorted = [...state.players].sort((a, b) => b.score - a.score);
-    const r = {};
-    sorted.forEach((p, i) => { r[p.id] = i > 0 && p.score === sorted[i - 1].score ? r[sorted[i - 1].id] : i + 1; });
-    return r;
+  function renderSetup() {
+    document.querySelectorAll(".size").forEach(b =>
+      b.setAttribute("aria-pressed", String(Number(b.dataset.n) === chosen && !$("customN").value)));
   }
-  function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
-  function award(id, delta) {
-    const p = state.players.find(x => x.id === id);
-    if (!p || !delta) return;
-    p.score += delta;
-    state.history.push({ pid: id, name: p.name, delta, q: state.question, t: Date.now() });
-    save(); render(id);
+  function renderQuiz(flashId) {
+    const n = quiz.answers.length, r = rightCount();
+    const current = Math.min(n + 1, quiz.total);
+    $("sAnswered").innerHTML = `${n}<small>/${quiz.total}</small>`;
+    $("sRight").textContent = r;
+    $("sPct").textContent = pct(r, n) + "%";
+    $("barR").style.width = (r / quiz.total * 100) + "%";
+    $("barW").style.width = ((n - r) / quiz.total * 100) + "%";
+    $("qNow").textContent = `Question ${current} of ${quiz.total}`;
+    $("qLeft").textContent = `${quiz.total - n} left`;
+    $("undoBtn").disabled = n === 0;
+    if (flashId) { const el = $(flashId); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+  }
+
+  function verdict(p) {
+    if (p === 100) return "Perfect score!";
+    if (p >= 90) return "Outstanding";
+    if (p >= 75) return "Great result";
+    if (p >= 50) return "Well played";
+    if (p >= 25) return "Keep practising";
+    return "Better luck next time";
+  }
+
+  function renderResult(entry) {
+    const p = pct(entry.right, entry.answered);
+    $("rPct").textContent = p + "%";
+    $("rVerdict").textContent = verdict(p);
+    $("rSub").textContent = `${entry.right} right out of ${entry.answered}` +
+      (entry.answered < entry.total ? ` (ended early, ${entry.total} planned)` : "");
+  }
+
+  function renderHistory() {
+    if (!history.length) {
+      $("histTable").innerHTML = `<p class="empty">Your finished quizzes will appear here.</p>`;
+      $("clearBtn").hidden = true;
+      return;
+    }
+    $("clearBtn").hidden = false;
+    const fmt = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const rows = history.slice().reverse().map(h => {
+      const p = pct(h.right, h.answered);
+      const cls = p >= 75 ? "hi" : p < 50 ? "lo" : "mid";
+      return `<tr><td>${fmt.format(new Date(h.at))}</td><td class="num">${h.right} / ${h.answered}</td><td class="num"><span class="pill ${cls}">${p}%</span></td></tr>`;
+    }).join("");
+    $("histTable").innerHTML = `<table><thead><tr><th>Date</th><th class="num">Right</th><th class="num">Score</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function start(total) {
+    quiz = { total, answers: [], startedAt: Date.now() };
+    write(KEY, quiz); show("quiz"); renderQuiz(); $("rightBtn").focus();
+  }
+
+  function answer(ok) {
+    if (!quiz || quiz.answers.length >= quiz.total) return;
+    quiz.answers.push(ok);
+    write(KEY, quiz);
+    if (quiz.answers.length >= quiz.total) finish();
+    else renderQuiz(ok ? "sRight" : "sPct");
+  }
+
+  function finish() {
+    const entry = { at: Date.now(), total: quiz.total, answered: quiz.answers.length, right: rightCount() };
+    if (entry.answered > 0) { history.push(entry); history = history.slice(-100); write(HKEY, history); }
+    quiz = null; write(KEY, null);
+    renderResult(entry); renderHistory(); show("result"); $("againBtn").focus();
   }
 
   function undo() {
-    const h = state.history.pop();
-    if (!h) return;
-    const p = state.players.find(x => x.id === h.pid);
-    if (p) p.score -= h.delta;
-    save(); render(h.pid);
+    if (!quiz || !quiz.answers.length) return;
+    quiz.answers.pop(); write(KEY, quiz); renderQuiz();
   }
 
-  function render(bumpId) {
-    const r = ranks();
-    const top = Math.max(...state.players.map(p => p.score));
-    const board = $("board");
-    const focusedId = document.activeElement && document.activeElement.id;
-    board.innerHTML = "";
-
-    const list = stream ? [...state.players].sort((a, b) => b.score - a.score) : state.players;
-    list.forEach((p, i) => {
-      const idx = state.players.indexOf(p);
-      const leader = state.players.length > 1 && p.score === top && top > 0;
-      const card = document.createElement("article");
-      card.className = "card" + (leader ? " leader" : "");
-      card.style.setProperty("--pc", p.color);
-      card.innerHTML = `
-        <div class="card-head">
-          <span class="rank">${ordinal(r[p.id])}</span>
-          <input class="pname" id="name-${p.id}" aria-label="Player name" value="${escapeAttr(p.name)}">
-          ${idx < 9 ? `<span class="key edit-only" title="Keyboard shortcut">${idx + 1}</span>` : ""}
-          <button class="icon-btn edit-only" data-remove="${p.id}" aria-label="Remove ${escapeAttr(p.name)}" title="Remove player">×</button>
-        </div>
-        <div class="score${p.id === bumpId ? " bump" : ""}">${p.score}</div>
-        <div class="controls edit-only">
-          <button data-delta="${-state.points}" data-id="${p.id}" aria-label="Remove ${state.points} from ${escapeAttr(p.name)}">−${state.points}</button>
-          <button class="plus" data-delta="${state.points}" data-id="${p.id}" aria-label="Add ${state.points} to ${escapeAttr(p.name)}">+${state.points}</button>
-        </div>
-        <form class="custom edit-only" data-custom="${p.id}">
-          <input id="custom-${p.id}" type="number" inputmode="numeric" step="1" placeholder="Other amount, e.g. -3" aria-label="Custom points for ${escapeAttr(p.name)}">
-          <button type="submit">Apply</button>
-        </form>`;
-      board.appendChild(card);
-    });
-
-    if (!stream && state.players.length < 12) {
-      const add = document.createElement("button");
-      add.className = "add-card edit-only"; add.id = "addPlayer"; add.textContent = "+ Add player";
-      board.appendChild(add);
-    }
-
-    $("qNum").textContent = state.question;
-    $("qBanner").textContent = (state.name ? state.name + " · " : "") + "Q" + state.question;
-    $("qPrev").disabled = state.question <= 1;
-    $("undoBtn").disabled = state.history.length === 0;
-    if (document.activeElement !== $("gameName")) $("gameName").value = state.name || "";
-
-    $("chips").innerHTML = POINT_OPTIONS.map(v =>
-      `<button class="chip" data-points="${v}" aria-pressed="${v === state.points}">${v}</button>`).join("");
-
-    $("log").innerHTML = state.history.length
-      ? [...state.history].reverse().map(h =>
-          `<li><span class="q">Q${h.q}</span><span class="d ${h.delta > 0 ? "pos" : "neg"}">${h.delta > 0 ? "+" : ""}${h.delta}</span><span>${escapeHtml(h.name)}</span></li>`).join("")
-      : `<li>No points given yet.</li>`;
-
-    if (focusedId && $(focusedId) && focusedId.startsWith("name-")) $(focusedId).focus();
-  }
-
-  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-  const escapeAttr = escapeHtml;
-
-  // in-page confirmation (no browser dialogs)
+  // confirmation bar (browser dialogs are avoided on purpose)
   let pending = null;
   function ask(text, fn) { $("confirmText").textContent = text; pending = fn; $("confirmBar").hidden = false; $("confirmNo").focus(); }
-  $("confirmYes").onclick = () => { $("confirmBar").hidden = true; if (pending) pending(); pending = null; };
+  $("confirmYes").onclick = () => { $("confirmBar").hidden = true; const f = pending; pending = null; if (f) f(); };
   $("confirmNo").onclick = () => { $("confirmBar").hidden = true; pending = null; };
 
-  // events
-  $("board").addEventListener("click", (e) => {
-    const b = e.target.closest("button"); if (!b) return;
-    if (b.dataset.delta) award(b.dataset.id, Number(b.dataset.delta));
-    else if (b.dataset.remove) {
-      const p = state.players.find(x => x.id === b.dataset.remove);
-      ask(`Remove ${p.name} and their ${p.score} points?`, () => {
-        state.players = state.players.filter(x => x.id !== p.id); save(); render();
-      });
-    } else if (b.id === "addPlayer") {
-      const p = { id: uid(), name: "Player " + (state.players.length + 1), score: 0, color: nextColor() };
-      state.players.push(p); save(); render();
-      const inp = $("name-" + p.id); if (inp) { inp.focus(); inp.select(); }
-    }
+  // setup events
+  $("sizes").addEventListener("click", (e) => {
+    const b = e.target.closest(".size"); if (!b) return;
+    chosen = Number(b.dataset.n); $("customN").value = ""; $("setupError").hidden = true; renderSetup();
   });
-  $("board").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const id = e.target.dataset.custom; const inp = $("custom-" + id);
-    const v = parseInt(inp.value, 10);
-    if (!isNaN(v)) award(id, v);
-  });
-  $("board").addEventListener("input", (e) => {
-    if (!e.target.classList.contains("pname")) return;
-    const p = state.players.find(x => "name-" + x.id === e.target.id);
-    if (p) { p.name = e.target.value; save(); }
-  });
+  $("customN").addEventListener("input", () => { $("setupError").hidden = true; renderSetup(); });
+  $("customN").addEventListener("keydown", (e) => { if (e.key === "Enter") $("startBtn").click(); });
+  $("startBtn").onclick = () => {
+    const raw = $("customN").value.trim();
+    const n = raw ? Number(raw) : chosen;
+    if (!Number.isInteger(n) || n < 1 || n > 1000) { $("setupError").hidden = false; $("customN").focus(); return; }
+    start(n);
+  };
 
-  $("chips").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-points]"); if (!b) return;
-    state.points = Number(b.dataset.points); save(); render();
-  });
-  $("qNext").onclick = () => { state.question++; save(); render(); };
-  $("qPrev").onclick = () => { if (state.question > 1) { state.question--; save(); render(); } };
+  // quiz events
+  $("rightBtn").onclick = () => answer(true);
+  $("wrongBtn").onclick = () => answer(false);
   $("undoBtn").onclick = undo;
-  $("gameName").addEventListener("input", (e) => { state.name = e.target.value; save(); $("qBanner").textContent = (state.name ? state.name + " · " : "") + "Q" + state.question; });
-  $("resetBtn").onclick = () => ask("Set every score to 0 and go back to question 1?", () => {
-    state.players.forEach(p => p.score = 0); state.question = 1; state.history = []; save(); render();
-  });
-  $("newBtn").onclick = () => ask("Start a new quiz? Players and scores will be cleared.", () => {
-    state = sample(); save(); render();
-  });
+  $("quitBtn").onclick = () => ask(
+    quiz.answers.length ? `End now and score ${quiz.answers.length} answered questions?` : "End this quiz? No questions answered yet.",
+    () => { if (quiz.answers.length) finish(); else { quiz = null; write(KEY, null); show("setup"); } });
 
-  function setStream(on) {
-    stream = on; document.body.classList.toggle("stream", on); $("streamExit").hidden = !on; render();
-  }
-  $("streamBtn").onclick = () => setStream(true);
-  $("streamExit").onclick = () => setStream(false);
+  $("againBtn").onclick = () => { show("setup"); renderSetup(); };
+  $("clearBtn").onclick = () => ask("Delete all past quiz results?", () => { history = []; write(HKEY, history); renderHistory(); });
+
+  document.addEventListener("keydown", (e) => {
+    if ($("quiz").hidden || e.target.matches("input") || e.metaKey || e.ctrlKey || e.altKey || !$("confirmBar").hidden) return;
+    const k = e.key.toLowerCase();
+    if (k === "r" || k === "arrowleft") { e.preventDefault(); answer(true); }
+    else if (k === "w" || k === "arrowright") { e.preventDefault(); answer(false); }
+    else if (k === "u") undo();
+  });
 
   $("themeBtn").onclick = () => {
     const root = document.documentElement;
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
-    try { localStorage.setItem(KEY + "-theme", root.dataset.theme); } catch (e) {}
+    try { localStorage.setItem("quiz-scoreboard-theme", root.dataset.theme); } catch (e) {}
   };
-  try { const t = localStorage.getItem(KEY + "-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  try { const t = localStorage.getItem("quiz-scoreboard-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
 
-  document.addEventListener("keydown", (e) => {
-    if (e.target.matches("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
-    const m = e.code.match(/^(Digit|Numpad)([1-9])$/);
-    if (m) {
-      const p = state.players[Number(m[2]) - 1];
-      if (p) { e.preventDefault(); award(p.id, e.shiftKey ? -state.points : state.points); }
-      return;
-    }
-    const k = e.key.toLowerCase();
-    if (k === "u") undo();
-    else if (k === "n") { state.question++; save(); render(); }
-    else if (k === "s") setStream(!stream);
-    else if (k === "escape") { if (stream) setStream(false); $("confirmNo").click(); }
-  });
-
-  render();
+  // resume a quiz that was in progress (e.g. after a refresh)
+  if (quiz && Array.isArray(quiz.answers) && quiz.answers.length < quiz.total) { show("quiz"); renderQuiz(); }
+  else { quiz = null; show("setup"); renderSetup(); }
+  renderHistory();
 })();
 </script>
 </body>
