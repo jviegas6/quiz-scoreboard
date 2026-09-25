@@ -1,27 +1,25 @@
-# Quiz Scoreboard
+# Marcador de Quiz
 
-Keep your own score while playing a quiz. It is a single `index.html` file with no build step.
+Registe a sua pontuação enquanto joga um quiz. É um único ficheiro `index.html`, sem passos de compilação.
 
-**Live app:** https://jviegas6.github.io/quiz-scoreboard/
+**Aplicação:** https://jviegas6.github.io/quiz-scoreboard/
 
-## How it works
+## Como funciona
 
-1. Pick the number of questions: 25, 50, 75, 100, or type your own.
-2. For each question, tap **Right** or **Wrong**. The screen shows the question count, the number of right answers and your percentage so far.
-3. At the end you see your final percentage and right answers, and can start again.
+1. Escolha o número de perguntas: 25, 50, 75, 100, ou introduza outro número.
+2. Em cada pergunta, carregue em **Certo** ou **Errado**. O ecrã mostra quantas perguntas respondeu, quantas acertou e a percentagem de acerto, com um gráfico de linhas que acompanha a evolução da percentagem.
+3. No fim vê a percentagem final, as respostas certas e o gráfico completo, e pode recomeçar.
 
-Past results are saved in your browser, so they appear under **Past quizzes** the next time you open the app on the same device. No account is needed and nothing is sent anywhere. **Clear** deletes the list.
+**Desfazer** anula a última resposta, incluindo a última pergunta depois de o quiz terminar.
 
-If you refresh the page during a quiz, you carry on where you left off.
+Os resultados anteriores ficam guardados no browser e aparecem em **Quizzes anteriores** sempre que abrir a aplicação no mesmo dispositivo. Não é preciso conta e nada é enviado para lado nenhum. **Limpar** apaga a lista.
 
-## Keyboard shortcuts
+Se atualizar a página a meio de um quiz, continua onde estava.
 
-| Key | Action |
+## Atalhos de teclado
+
+| Tecla | Ação |
 |---|---|
-| `R` or `←` | Right |
-| `W` or `→` | Wrong |
-| `U` | Undo the last answer |
-
-## Run locally
-
-Open `index.html` in a browser.
+| `C` ou `←` | Certo |
+| `E` ou `→` | Errado |
+| `D` ou `Backspace` | Desfazer a última resposta |

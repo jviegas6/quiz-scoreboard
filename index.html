@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-PT">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Quiz Scoreboard</title>
-<meta name="description" content="Keep your score while playing a quiz: pick the number of questions, tap Right or Wrong, see your percentage.">
+<title>Marcador de Quiz</title>
+<meta name="description" content="Registe a sua pontuação num quiz: escolha o número de perguntas, carregue em Certo ou Errado e acompanhe a percentagem.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
@@ -15,6 +15,7 @@
     --ink: #1b1d3a;
     --muted: #5d6187;
     --line: #d6d9ea;
+    --grid: #e6e8f2;
     --accent: #2f4bff;
     --accent-ink: #ffffff;
     --right: #00995c;
@@ -30,7 +31,7 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #10122a; --surface: #1a1d3d; --ink: #eef0ff; --muted: #a3a7cf;
-      --line: #2e3262; --accent: #6f84ff; --accent-ink: #0d0f24;
+      --line: #2e3262; --grid: #262a52; --accent: #7b8fff; --accent-ink: #0d0f24;
       --right: #2fd18a; --right-soft: #133a33; --wrong: #ff6b7d; --wrong-soft: #3d1a2a; --track: #262a55;
       --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.35);
       color-scheme: dark;
@@ -38,7 +39,7 @@
   }
   :root[data-theme="dark"] {
     --bg: #10122a; --surface: #1a1d3d; --ink: #eef0ff; --muted: #a3a7cf;
-    --line: #2e3262; --accent: #6f84ff; --accent-ink: #0d0f24;
+    --line: #2e3262; --grid: #262a52; --accent: #7b8fff; --accent-ink: #0d0f24;
     --right: #2fd18a; --right-soft: #133a33; --wrong: #ff6b7d; --wrong-soft: #3d1a2a; --track: #262a55;
     --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.35);
     color-scheme: dark;
@@ -94,7 +95,7 @@
   .stat .v { font: 400 clamp(30px, 8vw, 44px)/1 var(--display); font-variant-numeric: tabular-nums; }
   .stat .v small { font: 700 16px var(--body); color: var(--muted); }
   .stat.pct .v { color: var(--accent); }
-  .bar { height: 12px; border-radius: 999px; background: var(--track); overflow: hidden; display: flex; }
+  .bar { height: 12px; border-radius: 999px; background: var(--track); overflow: hidden; display: flex; gap: 2px; }
   .bar span { display: block; height: 100%; transition: width .2s ease; }
   .bar .r { background: var(--right); }
   .bar .w { background: var(--wrong); }
@@ -106,15 +107,39 @@
   .answer .right:hover { background: var(--right); color: #fff; }
   .answer .wrong:hover { background: var(--wrong); color: #fff; }
   .answer kbd { display: block; margin-top: 8px; font: 500 12px var(--body); opacity: .75; }
-  .quiz-actions { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .undo {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    padding: 14px; font-size: 17px;
+  }
+  .undo svg { width: 20px; height: 20px; flex: none; }
+  .undo .hint { font-weight: 500; font-size: 13px; color: var(--muted); }
+  .quiz-actions { display: flex; justify-content: flex-end; }
   .flash { animation: flash .3s ease; }
   @keyframes flash { 40% { transform: scale(1.1); } }
 
+  /* chart */
+  .chart { display: grid; gap: 8px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .chart-head .note { color: var(--muted); font-size: 13px; }
+  .plot { position: relative; height: 200px; }
+  .plot svg { display: block; width: 100%; height: 100%; overflow: visible; touch-action: pan-y; }
+  .plot .empty-msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 14px; pointer-events: none; }
+  .tip {
+    position: absolute; top: 0; pointer-events: none; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); font-size: 13px; line-height: 1.3; border-radius: 8px;
+    padding: 6px 9px; white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2;
+  }
+  .tip b { font-weight: 700; }
+  .axis-text { fill: var(--muted); font: 500 11px var(--body); font-variant-numeric: tabular-nums; }
+  .end-text { fill: var(--ink); font: 700 13px var(--body); font-variant-numeric: tabular-nums; }
+
   /* result */
   .result { text-align: center; }
+  .result .chart { text-align: left; }
   .big { font: 400 clamp(64px, 20vw, 110px)/1 var(--display); color: var(--accent); font-variant-numeric: tabular-nums; }
   .verdict { font: 700 20px var(--body); }
   .sub { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .result-actions { display: grid; gap: 8px; }
 
   /* history */
   .hist-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
@@ -139,6 +164,7 @@
 
   @media (max-width: 420px) {
     .sizes { grid-template-columns: repeat(2, 1fr); }
+    .plot { height: 170px; }
   }
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
@@ -148,60 +174,77 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Quiz Scoreboard</h1>
-    <button id="themeBtn" class="ghost" title="Switch light or dark">Theme</button>
+    <h1>Marcador de Quiz</h1>
+    <button id="themeBtn" class="ghost" title="Mudar entre claro e escuro">Tema</button>
   </header>
 
   <!-- setup -->
   <section class="panel" id="setup">
-    <h2>How many questions?</h2>
-    <div class="sizes" id="sizes" role="group" aria-label="Number of questions">
+    <h2>Quantas perguntas?</h2>
+    <div class="sizes" id="sizes" role="group" aria-label="Número de perguntas">
       <button class="size" data-n="25">25</button>
       <button class="size" data-n="50">50</button>
       <button class="size" data-n="75">75</button>
       <button class="size" data-n="100">100</button>
     </div>
     <div class="custom">
-      <label for="customN">Or type a number</label>
-      <input id="customN" type="number" inputmode="numeric" min="1" max="1000" step="1" placeholder="e.g. 40">
+      <label for="customN">Ou introduza outro número</label>
+      <input id="customN" type="number" inputmode="numeric" min="1" max="1000" step="1" placeholder="ex.: 40">
     </div>
-    <p class="error" id="setupError" hidden>Enter a number of questions from 1 to 1000.</p>
-    <button class="primary start" id="startBtn">Start quiz</button>
+    <p class="error" id="setupError" hidden>Introduza um número de perguntas entre 1 e 1000.</p>
+    <button class="primary start" id="startBtn">Começar o quiz</button>
   </section>
 
   <!-- quiz -->
   <section class="panel" id="quiz" hidden>
     <div class="stats">
-      <div class="stat"><span class="label">Question</span><span class="v" id="sAnswered">0<small>/25</small></span></div>
-      <div class="stat"><span class="label">Right</span><span class="v" id="sRight">0</span></div>
-      <div class="stat pct"><span class="label">Score</span><span class="v" id="sPct">0%</span></div>
+      <div class="stat"><span class="label">Respondidas</span><span class="v" id="sAnswered">0<small>/25</small></span></div>
+      <div class="stat"><span class="label">Certas</span><span class="v" id="sRight">0</span></div>
+      <div class="stat pct"><span class="label">Acerto</span><span class="v" id="sPct">0%</span></div>
     </div>
     <div class="bar" aria-hidden="true"><span class="r" id="barR"></span><span class="w" id="barW"></span></div>
-    <div class="qline"><span id="qNow">Question 1 of 25</span><span id="qLeft">25 left</span></div>
+    <div class="qline"><span id="qNow">Pergunta 1 de 25</span><span id="qLeft">Faltam 25</span></div>
     <div class="answer">
-      <button class="right" id="rightBtn">Right<kbd>R or ←</kbd></button>
-      <button class="wrong" id="wrongBtn">Wrong<kbd>W or →</kbd></button>
+      <button class="right" id="rightBtn">Certo<kbd>C ou ←</kbd></button>
+      <button class="wrong" id="wrongBtn">Errado<kbd>E ou →</kbd></button>
+    </div>
+    <button class="undo" id="undoBtn" title="Anular a última resposta (D)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      Desfazer <span class="hint" id="undoHint"></span>
+    </button>
+    <div class="chart">
+      <div class="chart-head"><span class="label">Percentagem de acerto ao longo do quiz</span></div>
+      <div class="plot" id="quizPlot"></div>
     </div>
     <div class="quiz-actions">
-      <button class="ghost" id="undoBtn" title="Undo the last answer (U)">Undo last answer</button>
-      <button class="ghost" id="quitBtn">End quiz now</button>
+      <button class="ghost" id="quitBtn">Terminar o quiz agora</button>
     </div>
   </section>
 
   <!-- result -->
   <section class="panel result" id="result" hidden>
-    <span class="label">Final score</span>
+    <span class="label">Pontuação final</span>
     <div class="big" id="rPct">0%</div>
     <div class="verdict" id="rVerdict"></div>
     <div class="sub" id="rSub"></div>
-    <button class="primary start" id="againBtn">Start again</button>
+    <div class="chart">
+      <div class="chart-head"><span class="label">Evolução da percentagem de acerto</span></div>
+      <div class="plot" id="resultPlot"></div>
+    </div>
+    <div class="result-actions">
+      <button class="primary start" id="againBtn">Recomeçar</button>
+      <button class="undo" id="resultUndoBtn" title="Anular a última resposta e voltar ao quiz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+        Desfazer a última resposta
+      </button>
+    </div>
   </section>
 
   <!-- history -->
   <section class="panel" id="history">
     <div class="hist-head">
-      <h2>Past quizzes</h2>
-      <button class="ghost" id="clearBtn">Clear</button>
+      <h2>Quizzes anteriores</h2>
+      <button class="ghost" id="clearBtn">Limpar</button>
     </div>
     <div class="table-scroll" id="histTable"></div>
   </section>
@@ -209,8 +252,8 @@
 
 <div class="confirm" id="confirmBar" hidden>
   <span id="confirmText"></span>
-  <button class="yes" id="confirmYes">Yes</button>
-  <button id="confirmNo">Cancel</button>
+  <button class="yes" id="confirmYes">Sim</button>
+  <button id="confirmNo">Cancelar</button>
 </div>
 
 <script>
@@ -218,76 +261,160 @@
   const KEY = "quiz-scoreboard-v2";
   const HKEY = "quiz-scoreboard-history";
   const $ = (id) => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
 
-  // Saved in this browser only. Nothing is sent anywhere.
+  // Guardado apenas neste browser. Nada é enviado para lado nenhum.
   function read(k, fallback) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch (e) { return fallback; } }
   function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
   let quiz = read(KEY, null);          // { total, answers: [true,false,...], startedAt }
-  let history = read(HKEY, []);        // [{ at, total, answered, right }]
+  let history = read(HKEY, []);        // [{ at, total, answered, right, answers }]
+  let lastFinished = null;             // quiz just finished, kept so its last answer can be undone
   let chosen = 25;
 
   const pct = (right, n) => n ? Math.round(right / n * 100) : 0;
-  const rightCount = () => quiz.answers.filter(Boolean).length;
+  const rightCount = (a) => a.filter(Boolean).length;
 
   function show(view) {
     ["setup", "quiz", "result"].forEach(v => $(v).hidden = v !== view);
   }
 
+  // ---------- chart: running % right after each question ----------
+  function drawChart(host, answers, total) {
+    host.innerHTML = "";
+    const W = Math.max(host.clientWidth, 200), H = host.clientHeight || 200;
+    const m = { t: 12, r: 44, b: 24, l: 38 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const maxX = Math.max(total, 2);
+    const x = (i) => m.l + (i - 1) / (maxX - 1) * iw;       // i = question number, 1-based
+    const y = (p) => m.t + (1 - p / 100) * ih;
+
+    const pts = []; let r = 0;
+    answers.forEach((a, i) => { if (a) r++; pts.push({ q: i + 1, p: r / (i + 1) * 100, right: r }); });
+
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", pts.length
+      ? `Percentagem de acerto após ${pts.length} perguntas: ${Math.round(pts[pts.length - 1].p)}%`
+      : "Ainda sem respostas");
+    const el = (tag, attrs, parent = svg) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent.appendChild(n); return n; };
+
+    // grid + y labels
+    [0, 25, 50, 75, 100].forEach(p => {
+      el("line", { x1: m.l, x2: m.l + iw, y1: y(p), y2: y(p), stroke: "var(--grid)", "stroke-width": 1 });
+      el("text", { x: m.l - 8, y: y(p) + 4, "text-anchor": "end", class: "axis-text" }).textContent = p + "%";
+    });
+    // x labels: first, middle, last question
+    const xt = [...new Set([1, Math.round((total + 1) / 2), total])].filter(v => v >= 1);
+    xt.forEach(q => {
+      el("text", { x: x(q), y: H - 6, "text-anchor": q === 1 ? "start" : q === total ? "end" : "middle", class: "axis-text" }).textContent = q;
+    });
+
+    if (!pts.length) {
+      const msg = document.createElement("div");
+      msg.className = "empty-msg"; msg.textContent = "O gráfico aparece com a primeira resposta";
+      host.appendChild(svg); host.appendChild(msg);
+      return;
+    }
+
+    const line = pts.map((d, i) => `${i ? "L" : "M"}${x(d.q).toFixed(1)},${y(d.p).toFixed(1)}`).join("");
+    if (pts.length > 1) {
+      el("path", { d: `${line}L${x(pts[pts.length - 1].q).toFixed(1)},${y(0)}L${x(1)},${y(0)}Z`, fill: "var(--accent)", "fill-opacity": .1 });
+    }
+    el("path", { d: line, fill: "none", stroke: "var(--accent)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" });
+
+    const end = pts[pts.length - 1];
+    el("circle", { cx: x(end.q), cy: y(end.p), r: 5, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 2 });
+    el("text", { x: x(end.q) + 9, y: y(end.p) + 4, class: "end-text" }).textContent = Math.round(end.p) + "%";
+
+    // hover layer
+    const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: "var(--muted)", "stroke-width": 1, visibility: "hidden" });
+    const dot = el("circle", { r: 5, fill: "var(--accent)", stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" });
+    const hit = el("rect", { x: m.l, y: 0, width: iw, height: H, fill: "transparent" });
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true;
+    host.appendChild(svg); host.appendChild(tip);
+
+    function move(ev) {
+      const rect = svg.getBoundingClientRect();
+      const px = (ev.clientX - rect.left) * (W / rect.width);
+      const q = Math.round((px - m.l) / iw * (maxX - 1)) + 1;
+      const d = pts[Math.min(Math.max(q, 1), pts.length) - 1];
+      const cx = x(d.q), cy = y(d.p);
+      cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+      dot.setAttribute("cx", cx); dot.setAttribute("cy", cy); dot.setAttribute("visibility", "visible");
+      tip.innerHTML = `Pergunta ${d.q}: <b>${Math.round(d.p)}%</b><br>${d.right} certas de ${d.q}`;
+      tip.hidden = false;
+      const left = Math.min(Math.max(cx / W * rect.width, 60), rect.width - 60);
+      tip.style.left = left + "px";
+      tip.style.top = Math.max(cy / H * rect.height - 56, -8) + "px";
+    }
+    function leave() { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); tip.hidden = true; }
+    hit.addEventListener("pointermove", move);
+    hit.addEventListener("pointerdown", move);
+    hit.addEventListener("pointerleave", leave);
+  }
+
+  // ---------- views ----------
   function renderSetup() {
     document.querySelectorAll(".size").forEach(b =>
       b.setAttribute("aria-pressed", String(Number(b.dataset.n) === chosen && !$("customN").value)));
   }
 
   function renderQuiz(flashId) {
-    const n = quiz.answers.length, r = rightCount();
+    const n = quiz.answers.length, r = rightCount(quiz.answers);
     const current = Math.min(n + 1, quiz.total);
     $("sAnswered").innerHTML = `${n}<small>/${quiz.total}</small>`;
     $("sRight").textContent = r;
     $("sPct").textContent = pct(r, n) + "%";
     $("barR").style.width = (r / quiz.total * 100) + "%";
     $("barW").style.width = ((n - r) / quiz.total * 100) + "%";
-    $("qNow").textContent = `Question ${current} of ${quiz.total}`;
-    $("qLeft").textContent = `${quiz.total - n} left`;
+    $("qNow").textContent = `Pergunta ${current} de ${quiz.total}`;
+    $("qLeft").textContent = `Faltam ${quiz.total - n}`;
     $("undoBtn").disabled = n === 0;
-    if (flashId) { const el = $(flashId); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+    $("undoHint").textContent = n ? `(pergunta ${n}: ${quiz.answers[n - 1] ? "certo" : "errado"})` : "";
+    drawChart($("quizPlot"), quiz.answers, quiz.total);
+    if (flashId) { const e = $(flashId); e.classList.remove("flash"); void e.offsetWidth; e.classList.add("flash"); }
   }
 
   function verdict(p) {
-    if (p === 100) return "Perfect score!";
-    if (p >= 90) return "Outstanding";
-    if (p >= 75) return "Great result";
-    if (p >= 50) return "Well played";
-    if (p >= 25) return "Keep practising";
-    return "Better luck next time";
+    if (p === 100) return "Pontuação perfeita!";
+    if (p >= 90) return "Excelente!";
+    if (p >= 75) return "Muito bom resultado";
+    if (p >= 50) return "Bem jogado";
+    if (p >= 25) return "Continue a praticar";
+    return "Mais sorte para a próxima";
   }
 
-  function renderResult(entry) {
-    const p = pct(entry.right, entry.answered);
+  function renderResult() {
+    const f = lastFinished, r = rightCount(f.answers), n = f.answers.length;
+    const p = pct(r, n);
     $("rPct").textContent = p + "%";
     $("rVerdict").textContent = verdict(p);
-    $("rSub").textContent = `${entry.right} right out of ${entry.answered}` +
-      (entry.answered < entry.total ? ` (ended early, ${entry.total} planned)` : "");
+    $("rSub").textContent = `${r} certas em ${n}` + (n < f.total ? ` (terminado mais cedo, estavam previstas ${f.total})` : "");
+    drawChart($("resultPlot"), f.answers, n < f.total ? n : f.total);
   }
 
   function renderHistory() {
     if (!history.length) {
-      $("histTable").innerHTML = `<p class="empty">Your finished quizzes will appear here.</p>`;
+      $("histTable").innerHTML = `<p class="empty">Os quizzes que terminar aparecem aqui.</p>`;
       $("clearBtn").hidden = true;
       return;
     }
     $("clearBtn").hidden = false;
-    const fmt = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const fmt = new Intl.DateTimeFormat("pt-PT", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
     const rows = history.slice().reverse().map(h => {
       const p = pct(h.right, h.answered);
       const cls = p >= 75 ? "hi" : p < 50 ? "lo" : "mid";
       return `<tr><td>${fmt.format(new Date(h.at))}</td><td class="num">${h.right} / ${h.answered}</td><td class="num"><span class="pill ${cls}">${p}%</span></td></tr>`;
     }).join("");
-    $("histTable").innerHTML = `<table><thead><tr><th>Date</th><th class="num">Right</th><th class="num">Score</th></tr></thead><tbody>${rows}</tbody></table>`;
+    $("histTable").innerHTML = `<table><thead><tr><th>Data</th><th class="num">Certas</th><th class="num">Acerto</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
+  // ---------- actions ----------
   function start(total) {
     quiz = { total, answers: [], startedAt: Date.now() };
+    lastFinished = null;
     write(KEY, quiz); show("quiz"); renderQuiz(); $("rightBtn").focus();
   }
 
@@ -300,15 +427,25 @@
   }
 
   function finish() {
-    const entry = { at: Date.now(), total: quiz.total, answered: quiz.answers.length, right: rightCount() };
+    const entry = { at: Date.now(), total: quiz.total, answered: quiz.answers.length, right: rightCount(quiz.answers) };
     if (entry.answered > 0) { history.push(entry); history = history.slice(-100); write(HKEY, history); }
+    lastFinished = { ...quiz, answers: quiz.answers.slice(), historyAt: entry.at };
     quiz = null; write(KEY, null);
-    renderResult(entry); renderHistory(); show("result"); $("againBtn").focus();
+    show("result"); renderResult(); renderHistory(); $("againBtn").focus();
   }
 
   function undo() {
     if (!quiz || !quiz.answers.length) return;
     quiz.answers.pop(); write(KEY, quiz); renderQuiz();
+  }
+
+  // From the result screen: drop the saved result and go back into the quiz without the last answer.
+  function undoFromResult() {
+    if (!lastFinished) return;
+    history = history.filter(h => h.at !== lastFinished.historyAt); write(HKEY, history);
+    quiz = { total: lastFinished.total, answers: lastFinished.answers.slice(0, -1), startedAt: lastFinished.startedAt };
+    lastFinished = null;
+    write(KEY, quiz); renderHistory(); show("quiz"); renderQuiz();
   }
 
   // confirmation bar (browser dialogs are avoided on purpose)
@@ -335,19 +472,32 @@
   $("rightBtn").onclick = () => answer(true);
   $("wrongBtn").onclick = () => answer(false);
   $("undoBtn").onclick = undo;
+  $("resultUndoBtn").onclick = undoFromResult;
   $("quitBtn").onclick = () => ask(
-    quiz.answers.length ? `End now and score ${quiz.answers.length} answered questions?` : "End this quiz? No questions answered yet.",
-    () => { if (quiz.answers.length) finish(); else { quiz = null; write(KEY, null); show("setup"); } });
+    quiz.answers.length ? `Terminar agora e contar as ${quiz.answers.length} perguntas respondidas?` : "Terminar este quiz? Ainda não respondeu a nenhuma pergunta.",
+    () => { if (quiz.answers.length) finish(); else { quiz = null; write(KEY, null); show("setup"); renderSetup(); } });
 
-  $("againBtn").onclick = () => { show("setup"); renderSetup(); };
-  $("clearBtn").onclick = () => ask("Delete all past quiz results?", () => { history = []; write(HKEY, history); renderHistory(); });
+  $("againBtn").onclick = () => { lastFinished = null; show("setup"); renderSetup(); };
+  $("clearBtn").onclick = () => ask("Apagar todos os resultados anteriores?", () => { history = []; write(HKEY, history); renderHistory(); });
 
   document.addEventListener("keydown", (e) => {
-    if ($("quiz").hidden || e.target.matches("input") || e.metaKey || e.ctrlKey || e.altKey || !$("confirmBar").hidden) return;
+    if (e.target.matches("input") || e.metaKey || e.ctrlKey || e.altKey || !$("confirmBar").hidden) return;
     const k = e.key.toLowerCase();
-    if (k === "r" || k === "arrowleft") { e.preventDefault(); answer(true); }
-    else if (k === "w" || k === "arrowright") { e.preventDefault(); answer(false); }
-    else if (k === "u") undo();
+    if (!$("quiz").hidden) {
+      if (k === "c" || k === "arrowleft") { e.preventDefault(); answer(true); }
+      else if (k === "e" || k === "arrowright") { e.preventDefault(); answer(false); }
+      else if (k === "d" || k === "backspace") { e.preventDefault(); undo(); }
+    } else if (!$("result").hidden && (k === "d" || k === "backspace")) { e.preventDefault(); undoFromResult(); }
+  });
+
+  // redraw charts when the width changes
+  let rt;
+  window.addEventListener("resize", () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => {
+      if (!$("quiz").hidden && quiz) drawChart($("quizPlot"), quiz.answers, quiz.total);
+      if (!$("result").hidden && lastFinished) renderResult();
+    }, 120);
   });
 
   $("themeBtn").onclick = () => {
