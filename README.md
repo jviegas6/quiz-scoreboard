@@ -16,6 +16,8 @@ Os resultados anteriores ficam guardados no browser e aparecem em **Quizzes ante
 
 Se atualizar a página a meio de um quiz, continua onde estava.
 
+No topo pode escolher o tema: **Claro**, **Escuro** ou **Rosa**.
+
 ## Atalhos de teclado
 
 | Tecla | Ação |

@@ -29,7 +29,7 @@
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
+    :root:not([data-theme="light"]):not([data-theme="pink"]) {
       --bg: #10122a; --surface: #1a1d3d; --ink: #eef0ff; --muted: #a3a7cf;
       --line: #2e3262; --grid: #262a52; --accent: #7b8fff; --accent-ink: #0d0f24;
       --right: #2fd18a; --right-soft: #133a33; --wrong: #ff6b7d; --wrong-soft: #3d1a2a; --track: #262a55;
@@ -45,6 +45,14 @@
     color-scheme: dark;
   }
 
+  :root[data-theme="pink"] {
+    --bg: #fdeef5; --surface: #ffffff; --ink: #3d1030; --muted: #8e5277;
+    --line: #f4cfe2; --grid: #f9e2ee; --accent: #d6247e; --accent-ink: #ffffff;
+    --right: #00925a; --right-soft: #dcf4e9; --wrong: #c8331f; --wrong-soft: #fde3dc; --track: #f7dbe9;
+    --shadow: 0 1px 0 rgba(61,16,48,.05), 0 6px 18px rgba(214,36,126,.10);
+    color-scheme: light;
+  }
+
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
@@ -56,7 +64,7 @@
   [hidden] { display: none !important; }
   .wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 20px; }
 
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
   h1 { font: 400 clamp(22px, 5vw, 30px)/1 var(--display); margin: 0; }
   h2 { font: 700 20px/1.2 var(--body); margin: 0; text-wrap: balance; }
   .label { font: 700 12px var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
@@ -71,6 +79,10 @@
   button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   button:disabled { opacity: .45; cursor: not-allowed; }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .themes { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+  .themes button { border: 0; border-radius: 999px; padding: 5px 12px; font: 500 14px var(--body); color: var(--muted); background: transparent; display: flex; align-items: center; gap: 6px; }
+  .themes button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .themes .sw { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); }
   button.ghost { background: transparent; border-color: transparent; color: var(--muted); font-weight: 500; font-size: 14px; padding: 6px 8px; }
   button.ghost:hover { color: var(--ink); border-color: var(--line); }
 
@@ -175,7 +187,11 @@
 <div class="wrap">
   <header>
     <h1>Marcador de Quiz</h1>
-    <button id="themeBtn" class="ghost" title="Mudar entre claro e escuro">Tema</button>
+    <div class="themes" id="themes" role="group" aria-label="Tema">
+      <button data-t="light"><span class="sw" style="background:#eef0f7"></span>Claro</button>
+      <button data-t="dark"><span class="sw" style="background:#10122a"></span>Escuro</button>
+      <button data-t="pink"><span class="sw" style="background:#d6247e"></span>Rosa</button>
+    </div>
   </header>
 
   <!-- setup -->
@@ -500,13 +516,23 @@
     }, 120);
   });
 
-  $("themeBtn").onclick = () => {
+  const darkOS = matchMedia("(prefers-color-scheme: dark)");
+  function applyTheme(t) {
     const root = document.documentElement;
-    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-    root.dataset.theme = dark ? "light" : "dark";
-    try { localStorage.setItem("quiz-scoreboard-theme", root.dataset.theme); } catch (e) {}
-  };
-  try { const t = localStorage.getItem("quiz-scoreboard-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    if (t) root.dataset.theme = t; else delete root.dataset.theme;
+    const effective = t || (darkOS.matches ? "dark" : "light");
+    document.querySelectorAll("#themes button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.t === effective)));
+    if (!$("quiz").hidden && quiz) drawChart($("quizPlot"), quiz.answers, quiz.total);
+  }
+  $("themes").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-t]"); if (!b) return;
+    try { localStorage.setItem("quiz-scoreboard-theme", b.dataset.t); } catch (err) {}
+    applyTheme(b.dataset.t);
+  });
+  let savedTheme = null;
+  try { savedTheme = localStorage.getItem("quiz-scoreboard-theme"); } catch (e) {}
+  applyTheme(savedTheme);
+  darkOS.addEventListener?.("change", () => { let t = null; try { t = localStorage.getItem("quiz-scoreboard-theme"); } catch (e) {} applyTheme(t); });
 
   // resume a quiz that was in progress (e.g. after a refresh)
   if (quiz && Array.isArray(quiz.answers) && quiz.answers.length < quiz.total) { show("quiz"); renderQuiz(); }
